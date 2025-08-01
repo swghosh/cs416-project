@@ -3,6 +3,7 @@ let spiData, worldData;
 let currentView = 'intro';
 let currentCountry = null;
 let currentComponent = null;
+let currentContinent = 'all';
 
 // D3 Selections
 const container = d3.select('#narrative-container');
@@ -33,8 +34,26 @@ backButton.on('click', () => {
     update();
 });
 
+function createFilterButtons() {
+    const continents = ['all', 'Asia', 'Europe', 'Africa', 'North America', 'South America', 'Oceania'];
+    const filterContainer = d3.select('#filter-container');
+    filterContainer.html('');
+
+    continents.forEach(continent => {
+        filterContainer.append('button')
+            .attr('class', `filter-button ${currentContinent === continent ? 'active' : ''}`)
+            .text(continent.charAt(0).toUpperCase() + continent.slice(1))
+            .on('click', () => {
+                currentContinent = continent;
+                currentView = 'world';
+                update();
+            });
+    });
+}
+
 // Main Update Function
 function update() {
+    createFilterButtons();
     container.html('');
     backButton.style('display', currentView !== 'intro' && currentView !== 'world' ? 'block' : 'none');
 
@@ -84,7 +103,11 @@ function createWorldMap() {
     const spiDataByCountry = new Map(spiData.map(d => [d.country, d]));
     const colorScale = d3.scaleSequential(d3.interpolatePlasma).domain([40, 100]);
 
-    const countries = topojson.feature(worldData, worldData.objects.countries).features;
+    let countries = topojson.feature(worldData, worldData.objects.countries).features;
+
+    if (currentContinent !== 'all') {
+        countries = countries.filter(d => countryToContinent[d.properties.name] === currentContinent);
+    }
 
     svg.selectAll('.country')
         .data(countries)
