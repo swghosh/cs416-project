@@ -109,6 +109,54 @@ function createWorldMap() {
         countries = countries.filter(d => countryToContinent[d.properties.name] === currentContinent);
     }
 
+    const top5Countries = spiData
+        .filter(d => currentContinent === 'all' || countryToContinent[d.country] === currentContinent)
+        .sort((a, b) => b.spi_score - a.spi_score)
+        .slice(0, 5);
+
+    const barChartContainer = container.append('div')
+        .style('position', 'absolute')
+        .style('bottom', '20px')
+        .style('left', '20px')
+        .style('width', '250px')
+        .style('background-color', 'rgba(255, 255, 255, 0.9)')
+        .style('padding', '10px')
+        .style('border-radius', '5px');
+
+    barChartContainer.append('h4').text(`Top 5 in ${currentContinent === 'all' ? 'the World' : currentContinent}`);
+
+    const barSvg = barChartContainer.append('svg').attr('width', '100%').attr('height', 200);
+
+    const yScale = d3.scaleBand()
+        .domain(top5Countries.map(d => d.country))
+        .range([0, 200])
+        .padding(0.1);
+
+    const xScale = d3.scaleLinear()
+        .domain([0, 100])
+        .range([0, 230]);
+
+    barSvg.selectAll('.bar')
+        .data(top5Countries)
+        .enter()
+        .append('rect')
+        .attr('class', 'bar')
+        .attr('y', d => yScale(d.country))
+        .attr('height', yScale.bandwidth())
+        .attr('width', d => xScale(d.spi_score))
+        .style('fill', d => colorScale(d.spi_score));
+
+    barSvg.selectAll('.bar-label')
+        .data(top5Countries)
+        .enter()
+        .append('text')
+        .attr('class', 'bar-label')
+        .attr('x', 5)
+        .attr('y', d => yScale(d.country) + yScale.bandwidth() / 2)
+        .attr('dy', '0.35em')
+        .style('fill', '#fff')
+        .text(d => `${d.country} (${(+d.spi_score).toFixed(2)})`);
+
     svg.selectAll('.country')
         .data(countries)
         .enter().append('path')
