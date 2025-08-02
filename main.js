@@ -208,12 +208,14 @@ function createCountryDashboard(countryData) {
     const svg = container.append('svg').attr('viewBox', '0 0 960 600');
     svg.append('text').attr('x', '50%').attr('y', 40).attr('text-anchor', 'middle').style('font-size', '28px').style('font-weight', 'bold').text(countryData.country);
 
+    const colorScale = d3.scaleOrdinal(d3.schemePaired);
+
     const categories = [
-        { name: 'Basic Human Needs', key: 'basic_human_needs', color: '#e74c3c' },
-        { name: 'Foundations of Wellbeing', key: 'wellbeing', color: '#27ae60' },
-        { name: 'Opportunity', key: 'opportunity', color: '#8e44ad' }
+        { name: 'Basic Human Needs', key: 'basic_human_needs' },
+        { name: 'Foundations of Wellbeing', key: 'wellbeing' },
+        { name: 'Opportunity', key: 'opportunity' }
     ];
-    const categoryData = categories.map(c => ({ category: c.name, value: +countryData[c.key], color: c.color, key: c.key }));
+    const categoryData = categories.map((c, i) => ({ category: c.name, value: +countryData[c.key], color: colorScale(i), key: c.key }));
 
     const innerRadius = 80, outerRadius = 180;
     const xScale = d3.scaleBand().domain(categoryData.map(d => d.category)).range([0, 2 * Math.PI]).align(0);
@@ -288,6 +290,7 @@ function createComponentDetail(countryData, componentKey) {
 
     const xScale = d3.scaleBand().domain(subComponents.map(d => d.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()))).range([100, 860]).padding(0.4);
     const yScale = d3.scaleLinear().domain([0, 100]).range([500, 100]);
+    const colorScale = d3.scaleOrdinal(d3.schemeObservable10);
 
     svg.append('g').attr('transform', 'translate(0, 500)').call(d3.axisBottom(xScale).tickSize(0).tickPadding(10)).selectAll('text').style('font-size', '12px').attr('transform', 'rotate(-45)').style('text-anchor', 'end');
     svg.append('g').attr('transform', 'translate(100, 0)').call(d3.axisLeft(yScale).ticks(5).tickSize(-760).tickPadding(10));
@@ -300,7 +303,7 @@ function createComponentDetail(countryData, componentKey) {
         .attr('y', 500)
         .attr('width', xScale.bandwidth())
         .attr('height', 0)
-        .style('fill', '#3498db')
+        .style('fill', (d, i) => colorScale(i))
         .transition().duration(1000)
         .attr('y', d => yScale(d.value))
         .attr('height', d => 500 - yScale(d.value));

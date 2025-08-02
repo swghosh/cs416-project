@@ -70,7 +70,7 @@ p#desc {
     padding: 12px 25px;
     font-size: 16px;
     cursor: pointer;
-    background-color: #d8b05e;
+    background-color: #3498db;
     border: none;
     color: #fff;
     border-radius: 5px;
@@ -79,7 +79,7 @@ p#desc {
 }
 
 #back:hover {
-    background-color: #34495e;
+    background-color: #42cbd5;
 }
 
 .country {
@@ -127,7 +127,7 @@ p#desc {
     padding: 10px 20px;
     font-size: 16px;
     cursor: pointer;
-    background-color: #3498db;
+    background-color: #361d56;
     border: none;
     color: #fff;
     border-radius: 5px;
@@ -136,11 +136,11 @@ p#desc {
 }
 
 .filter-button:hover {
-    background-color: #2980b9;
+    background-color: #42a1b2;
 }
 
 .filter-button.active {
-    background-color: #e67e22;
+    background-color: #5ac486;
 }
 
 @media (max-width: 768px) {
