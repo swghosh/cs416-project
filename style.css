@@ -51,15 +51,19 @@ h1 {
 }
 
 #back {
-    margin-top: 20px;
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
     padding: 12px 25px;
     font-size: 16px;
     cursor: pointer;
-    background-color: #2c3e50;
+    background-color: #d8b05e;
     border: none;
     color: #fff;
     border-radius: 5px;
     transition: all 0.3s ease;
+    z-index: 10;
 }
 
 #back:hover {

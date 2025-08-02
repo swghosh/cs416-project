@@ -1,27 +1,23 @@
-// State Parameters
-let spiData, worldData;
 let currentView = 'intro';
 let currentCountry = null;
 let currentComponent = null;
 let currentContinent = 'all';
 
-// D3 Selections
 const container = d3.select('#narrative-container');
 const narrativeText = d3.select('#narrative-text');
 const tooltip = d3.select('#tooltip');
 const backButton = d3.select('#back');
 
-// Data Loading
+let spiData, worldData;
 Promise.all([
     d3.csv('spi22.csv'),
     d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
 ]).then(([spi, world]) => {
     spiData = spi;
     worldData = world;
-    update();
+    populate();
 });
 
-// Back Button Logic
 backButton.on('click', () => {
     if (currentView === 'subComponent') {
         currentView = 'component';
@@ -31,7 +27,7 @@ backButton.on('click', () => {
         currentView = 'world';
         currentCountry = null;
     }
-    update();
+    populate();
 });
 
 function createFilterButtons() {
@@ -46,13 +42,12 @@ function createFilterButtons() {
             .on('click', () => {
                 currentContinent = continent;
                 currentView = 'world';
-                update();
+                populate();
             });
     });
 }
 
-// Main Update Function
-function update() {
+function populate() {
     createFilterButtons();
     container.html('');
     backButton.style('display', currentView !== 'intro' && currentView !== 'world' ? 'block' : 'none');
@@ -90,9 +85,9 @@ function createIntroScene() {
         .select('.intro-button')
         .on('click', () => {
             currentView = 'world';
-            update();
+            populate();
         });
-    narrativeText.html('Welcome! Click the button above to start exploring the Social Progress Index.');
+    narrativeText.html('');
 }
 
 // Scene: World Map
@@ -183,11 +178,11 @@ function createWorldMap() {
             if (countryData) {
                 currentCountry = countryData;
                 currentView = 'country';
-                update();
+                populate();
             }
         });
 
-    narrativeText.html('This world map shows the overall Social Progress Index score for each country. Darker shades indicate higher social progress. Click on a country to drill down and explore its detailed performance.');
+    narrativeText.html('This map shows the overall Social Progress Index score for each country. Darker shades indicate higher social progress. Click on a country or a continent to drill down and explore its detailed performance.');
 }
 
 // Scene: Country Dashboard
@@ -225,7 +220,7 @@ function createCountryDashboard(countryData) {
         .on('click', (event, d) => {
             currentComponent = d.key;
             currentView = 'component';
-            update();
+            populate();
         });
 
     g.selectAll('.arc-label')
@@ -291,4 +286,4 @@ function createComponentDetail(countryData, componentKey) {
 }
 
 // Initial call
-update();
+populate();
