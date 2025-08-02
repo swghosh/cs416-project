@@ -73,22 +73,30 @@ function populate() {
 
 // Scene: Introduction
 function createIntroScene() {
-    container.append('div')
+    const intro = container.append('div')
         .style('padding', '50px')
-        .html(`
-            <h2>What is Social Progress?</h2>
+        .style('opacity', 0);
 
-            <p id="desc">
-                The Social Progress Index (SPI) offers a comprehensive framework for measuring a country's social performance, independent of economic indicators. It assesses how well a society provides for the needs of its citizens, creates foundations for wellbeing, and expands opportunity. This interactive story allows you to explore the 2023 SPI data, from a global overview down to the specific factors that shape the lives of people around the world.
-            </p>
-            
-            <button class="intro-button">Let's Begin Exploring</button>
-        `)
-        .select('.intro-button')
+    intro.html(`
+        <h2>What is Social Progress?</h2>
+
+        <p id="desc">
+            The Social Progress Index (SPI) offers a comprehensive framework for measuring a country's social performance, independent of economic indicators. It assesses how well a society provides for the needs of its citizens, creates foundations for wellbeing, and expands opportunity. This interactive story allows you to explore the 2023 SPI data, from a global overview down to the specific factors that shape the lives of people around the world.
+        </p>
+        
+        <button class="intro-button">Let's Begin Exploring</button>
+    `)
+
+    intro.transition()
+        .duration(1000)
+        .style('opacity', 1);
+
+    intro.select('.intro-button')
         .on('click', () => {
             currentView = 'world';
             populate();
         });
+
     narrativeText.html('');
 }
 
@@ -143,8 +151,11 @@ function createWorldMap() {
         .attr('class', 'bar')
         .attr('y', d => yScale(d.country))
         .attr('height', yScale.bandwidth())
-        .attr('width', d => xScale(d.spi_score))
-        .style('fill', d => colorScale(d.spi_score));
+        .attr('width', 0)
+        .style('fill', d => colorScale(d.spi_score))
+        .transition()
+        .duration(1000)
+        .attr('width', d => xScale(d.spi_score));
 
     barSvg.selectAll('.bar-label')
         .data(top5Countries)
@@ -166,7 +177,12 @@ function createWorldMap() {
             const countryData = spiDataByCountry.get(d.properties.name);
             return countryData ? colorScale(+countryData.spi_score) : '#ccc';
         })
-        .on('mouseover', (event, d) => {
+        .style('opacity', 0)
+        .transition()
+        .duration(1000)
+        .style('opacity', 1);
+
+    svg.selectAll('.country').on('mouseover', (event, d) => {
             const countryData = spiDataByCountry.get(d.properties.name);
             tooltip.style('opacity', 1)
                 .html(`${d.properties.name}<br>SPI: ${countryData ? (+countryData.spi_score).toFixed(2) : 'N/A'}`)
@@ -216,13 +232,21 @@ function createCountryDashboard(countryData) {
         .data(categoryData)
         .enter()
         .append('path')
-        .attr('d', arc)
         .style('fill', d => d.color)
         .style('cursor', 'pointer')
         .on('click', (event, d) => {
             currentComponent = d.key;
             currentView = 'component';
             populate();
+        })
+        .transition()
+        .duration(1000)
+        .attrTween('d', d => {
+            const i = d3.interpolate(0, d.value);
+            return t => {
+                d.value = i(t);
+                return arc(d);
+            };
         });
 
     g.selectAll('.arc-label')
@@ -283,7 +307,7 @@ function createComponentDetail(countryData, componentKey) {
 
     narrativeText.html(`
         <h3>Deep Dive: ${componentName}</h3>
-        
+
         <p>This chart breaks down the <strong>${componentName}</strong> score into its core components. This reveals the specific areas where ${countryData.country} is performing well and where there are challenges.</p>
     `);
 }
