@@ -76,11 +76,13 @@ function createIntroScene() {
     container.append('div')
         .style('padding', '50px')
         .html(`
-            <h2 style="font-family: 'Merriweather', serif;">What is Social Progress?</h2>
-            <p style="font-family: 'Lato', sans-serif; font-size: 1.2em; line-height: 1.6;">
+            <h2>What is Social Progress?</h2>
+
+            <p id="desc">
                 The Social Progress Index (SPI) offers a comprehensive framework for measuring a country's social performance, independent of economic indicators. It assesses how well a society provides for the needs of its citizens, creates foundations for wellbeing, and expands opportunity. This interactive story allows you to explore the 2023 SPI data, from a global overview down to the specific factors that shape the lives of people around the world.
             </p>
-            <button class="intro-button">Begin the Journey</button>
+            
+            <button class="intro-button">Let's Begin Exploring</button>
         `)
         .select('.intro-button')
         .on('click', () => {
@@ -92,7 +94,7 @@ function createIntroScene() {
 
 // Scene: World Map
 function createWorldMap() {
-    const svg = container.append('svg').attr('width', '100%').attr('height', '100%');
+    const svg = container.append('svg').attr('viewBox', '0 0 960 600');
     const projection = d3.geoMercator().scale(130).translate([480, 350]);
     const path = d3.geoPath().projection(projection);
     const spiDataByCountry = new Map(spiData.map(d => [d.country, d]));
@@ -182,12 +184,12 @@ function createWorldMap() {
             }
         });
 
-    narrativeText.html('This map shows the overall Social Progress Index score for each country. Darker shades indicate higher social progress. Click on a country or a continent to drill down and explore its detailed performance.');
+    narrativeText.html('The map shows overall Social Progress Index score for each country. Darker shades indicate higher social progress. Click on a country or select a continent to drill down and explore its detailed social progress.');
 }
 
 // Scene: Country Dashboard
 function createCountryDashboard(countryData) {
-    const svg = container.append('svg').attr('width', '100%').attr('height', '100%');
+    const svg = container.append('svg').attr('viewBox', '0 0 960 600');
     svg.append('text').attr('x', '50%').attr('y', 40).attr('text-anchor', 'middle').style('font-size', '28px').style('font-weight', 'bold').text(countryData.country);
 
     const categories = [
@@ -248,7 +250,7 @@ function createCountryDashboard(countryData) {
 
 // Scene: Component Detail
 function createComponentDetail(countryData, componentKey) {
-    const svg = container.append('svg').attr('width', '100%').attr('height', '100%');
+    const svg = container.append('svg').attr('viewBox', '0 0 960 600');
     const componentMap = {
         basic_human_needs: ['basic_nutri_med_care', 'water_sanitation', 'shelter', 'personal_safety'],
         wellbeing: ['access_basic_knowledge', 'access_info_comm', 'health_wellness', 'env_quality'],
@@ -281,7 +283,8 @@ function createComponentDetail(countryData, componentKey) {
 
     narrativeText.html(`
         <h3>Deep Dive: ${componentName}</h3>
-        <p>This chart breaks down the <strong>${componentName}</strong> score into its core components. This reveals the specific areas where ${countryData.country} is performing well and where there are challenges. For example, a high score in 'Water and Sanitation' but a low score in 'Personal Safety' can tell a powerful story about the country's development priorities and outcomes.</p>
+        
+        <p>This chart breaks down the <strong>${componentName}</strong> score into its core components. This reveals the specific areas where ${countryData.country} is performing well and where there are challenges.</p>
     `);
 }
 
