@@ -13,7 +13,7 @@ const backButton = d3.select('#back');
 
 // Data Loading
 Promise.all([
-    d3.csv('spi.csv'),
+    d3.csv('spi22.csv'),
     d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
 ]).then(([spi, world]) => {
     spiData = spi;
@@ -101,16 +101,19 @@ function createWorldMap() {
     const projection = d3.geoMercator().scale(130).translate([480, 350]);
     const path = d3.geoPath().projection(projection);
     const spiDataByCountry = new Map(spiData.map(d => [d.country, d]));
-    const colorScale = d3.scaleSequential(d3.interpolatePlasma).domain([40, 100]);
+    const colorScale = d3.scaleSequential(d3.interpolateYlGn).domain([40, 100]);
 
     let countries = topojson.feature(worldData, worldData.objects.countries).features;
 
     if (currentContinent !== 'all') {
-        countries = countries.filter(d => countryToContinent[d.properties.name] === currentContinent);
+        countries = countries.filter(d => {
+            const countryData = spiData.find(spi => spi.country === d.properties.name);
+            return countryData && countryData.continent === currentContinent;
+        });
     }
 
     const top5Countries = spiData
-        .filter(d => currentContinent === 'all' || countryToContinent[d.country] === currentContinent)
+        .filter(d => currentContinent === 'all' || d.continent === currentContinent)
         .sort((a, b) => b.spi_score - a.spi_score)
         .slice(0, 5);
 
@@ -175,6 +178,7 @@ function createWorldMap() {
         })
         .on('mouseout', () => tooltip.style('opacity', 0))
         .on('click', (event, d) => {
+            tooltip.style('opacity', 0);
             const countryData = spiDataByCountry.get(d.properties.name);
             if (countryData) {
                 currentCountry = countryData;
