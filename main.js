@@ -410,37 +410,56 @@ function createComponentDetail(countryData, componentKey) {
     const componentName = componentKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     svg.append('text').attr('x', '50%').attr('y', 40).attr('text-anchor', 'middle').style('font-size', '24px').style('font-weight', 'bold').text(`${componentName} in ${countryData.country}`);
 
-    const xScale = d3.scaleBand().domain(subComponentData.map(d => d.name)).range([100, 860]).padding(0.4);
-    const yScale = d3.scaleLinear().domain([0, 100]).range([500, 100]);
+    const margin = { top: 100, right: 100, bottom: 100, left: 250 };
+    const width = 960 - margin.left - margin.right;
+    const height = 600 - margin.top - margin.bottom;
+
+    const yScale = d3.scaleBand().domain(subComponentData.map(d => d.name)).range([0, height]).padding(0.4);
+    const xScale = d3.scaleLinear().domain([0, 100]).range([0, width]);
     const color = d3.scaleOrdinal()
         .domain(['Basic Human Needs', 'Foundations of Wellbeing', 'Opportunity'])
         .range(d3.schemeTableau10.slice(0,3));
 
-    const baseColor = color(componentKey.split('_')[0].charAt(0).toUpperCase() + componentKey.split('_')[0].slice(1) + (componentKey.split('_').length > 1 ? ' ' + componentKey.split('_')[1].charAt(0).toUpperCase() + componentKey.split('_')[1].slice(1) : ''));
+    const componentNameMapping = {
+        basic_human_needs: 'Basic Human Needs',
+        wellbeing: 'Foundations of Wellbeing',
+        opportunity: 'Opportunity'
+    };
+    const baseColor = color(componentNameMapping[componentKey]);
     const shade = d3.scaleLinear()
-        .domain([0, subComponentData.length])
-        .range([d3.color(baseColor).brighter(0.5), d3.color(baseColor).darker(0.5)]);
+        .domain([0, 100])
+        .range([d3.color(baseColor).brighter(1), d3.color(baseColor).darker(1)]);
 
-    svg.append('g').attr('transform', 'translate(0, 500)').call(d3.axisBottom(xScale).tickSize(0).tickPadding(10)).selectAll('text').style('font-size', '12px').attr('transform', 'rotate(-45)').style('text-anchor', 'end');
-    svg.append('g').attr('transform', 'translate(100, 0)').call(d3.axisLeft(yScale).ticks(5).tickSize(-760).tickPadding(10));
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
-    svg.selectAll('rect')
+    g.append('g').call(d3.axisLeft(yScale).tickSize(0).tickPadding(10));
+    g.append('g').attr('transform', `translate(0, ${height})`).call(d3.axisBottom(xScale).ticks(5).tickSize(-height).tickPadding(10));
+
+    g.selectAll('rect')
         .data(subComponentData)
         .enter()
         .append('rect')
-        .attr('x', d => xScale(d.name))
-        .attr('y', 500)
-        .attr('width', xScale.bandwidth())
-        .attr('height', 0)
-        .style('fill', (d, i) => shade(i))
+        .attr('y', d => yScale(d.name))
+        .attr('x', 0)
+        .attr('height', yScale.bandwidth())
+        .attr('width', 0)
+        .style('fill', d => shade(d.value))
+        .on('mouseover', (event, d) => {
+            tooltip.style('opacity', 1)
+                .html(`<strong>${d.name}</strong><br>Score: ${d.value.toFixed(2)}`)
+                .style('left', (event.pageX + 10) + 'px')
+                .style('top', (event.pageY - 28) + 'px');
+        })
+        .on('mouseout', () => {
+            tooltip.style('opacity', 0);
+        })
         .transition().duration(1000)
-        .attr('y', d => yScale(d.value))
-        .attr('height', d => 500 - yScale(d.value));
+        .attr('width', d => xScale(d.value));
 
     narrativeText.html(`
-        <h3>Deep Dive: ${componentName}</h3>
-
-        <p>This chart breaks down the <strong>${componentName}</strong> score into its core components. This reveals the specific areas where ${countryData.country} is performing well and where there are challenges.</p>
+        <h3>A Closer Look: ${componentName} in ${countryData.country}</h3>
+        <p>This chart provides a detailed breakdown of the <strong>${componentName}</strong> dimension. Each bar represents a specific component, offering a clear view of ${countryData.country}'s strengths and areas for improvement.</p>
+        <p>Hover over the bars to see the precise score for each component and gain deeper insights into the nation's social progress fabric.</p>
     `);
 }
 
