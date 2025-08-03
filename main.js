@@ -20,9 +20,7 @@ Promise.all([
 });
 
 backButton.on('click', () => {
-    if (currentView === 'subComponent') {
-        currentView = 'component';
-    } else if (currentView === 'component') {
+    if (currentView === 'component') {
         currentView = 'country';
     } else if (currentView === 'country') {
         currentView = 'world';
@@ -65,9 +63,6 @@ function populate() {
             break;
         case 'component':
             createComponentDetail(currentCountry, currentComponent);
-            break;
-        case 'subComponent':
-            // This view will be handled by the component detail click
             break;
     }
 }
@@ -259,67 +254,124 @@ function createWorldMap() {
 
 // Scene: Country Dashboard
 function createCountryDashboard(countryData) {
+    const componentMap = {
+        basic_human_needs: ['basic_nutri_med_care', 'water_sanitation', 'shelter', 'personal_safety'],
+        wellbeing: ['access_basic_knowledge', 'access_info_comm', 'health_wellness', 'env_quality'],
+        opportunity: ['personal_rights', 'personal_freedom_choice', 'inclusiveness', 'access_adv_edu']
+    };
+
+    const nameMap = {
+        'basic_nutri_med_care': 'Nutrition and Basic Medical Care',
+        'water_sanitation': 'Water and Sanitation',
+        'shelter': 'Shelter',
+        'personal_safety': 'Personal Safety',
+        'access_basic_knowledge': 'Access to Basic Knowledge',
+        'access_info_comm': 'Access to Information and Communications',
+        'health_wellness': 'Health and Wellness',
+        'env_quality': 'Environmental Quality',
+        'personal_rights': 'Personal Rights',
+        'personal_freedom_choice': 'Personal Freedom and Choice',
+        'inclusiveness': 'Inclusiveness',
+        'access_adv_edu': 'Access to Advanced Education'
+    };
+
+    const hierarchyData = {
+        name: "root",
+        children: [
+            {
+                name: 'Basic Human Needs',
+                key: 'basic_human_needs',
+                children: componentMap.basic_human_needs.map(key => ({ name: nameMap[key], value: +countryData[key], key: key }))
+            },
+            {
+                name: 'Foundations of Wellbeing',
+                key: 'wellbeing',
+                children: componentMap.wellbeing.map(key => ({ name: nameMap[key], value: +countryData[key], key: key }))
+            },
+            {
+                name: 'Opportunity',
+                key: 'opportunity',
+                children: componentMap.opportunity.map(key => ({ name: nameMap[key], value: +countryData[key], key: key }))
+            }
+        ]
+    };
+
     const svg = container.append('svg').attr('viewBox', '0 0 960 600');
     svg.append('text').attr('x', '50%').attr('y', 40).attr('text-anchor', 'middle').style('font-size', '28px').style('font-weight', 'bold').text(countryData.country);
 
-    const colorScale = d3.scaleOrdinal(d3.schemePaired);
+    const width = 960, height = 600, radius = Math.min(width, height) / 2.5;
+    const g = svg.append('g').attr('transform', `translate(${width / 2},${height / 2 + 20})`);
 
-    const categories = [
-        { name: 'Basic Human Needs', key: 'basic_human_needs' },
-        { name: 'Foundations of Wellbeing', key: 'wellbeing' },
-        { name: 'Opportunity', key: 'opportunity' }
-    ];
-    const categoryData = categories.map((c, i) => ({ category: c.name, value: +countryData[c.key], color: colorScale(i), key: c.key }));
+    const color = d3.scaleOrdinal()
+        .domain(['Basic Human Needs', 'Foundations of Wellbeing', 'Opportunity'])
+        .range(d3.schemeTableau10.slice(0,3));
 
-    const innerRadius = 80, outerRadius = 180;
-    const xScale = d3.scaleBand().domain(categoryData.map(d => d.category)).range([0, 2 * Math.PI]).align(0);
-    const yScale = d3.scaleRadial().domain([0, 100]).range([innerRadius, outerRadius]);
+
+    const partition = d3.partition().size([2 * Math.PI, radius]);
+
+    const root = d3.hierarchy(hierarchyData)
+        .sum(d => d.value);
+
+    partition(root);
 
     const arc = d3.arc()
-        .innerRadius(innerRadius)
-        .outerRadius(d => yScale(d.value))
-        .startAngle(d => xScale(d.category))
-        .endAngle(d => xScale(d.category) + xScale.bandwidth())
-        .padAngle(0.01).padRadius(innerRadius);
-
-    const g = svg.append('g').attr('transform', 'translate(480, 300)');
+        .startAngle(d => d.x0)
+        .endAngle(d => d.x1)
+        .innerRadius(d => d.y0)
+        .outerRadius(d => d.y1);
 
     g.selectAll('path')
-        .data(categoryData)
-        .enter()
-        .append('path')
-        .style('fill', d => d.color)
-        .style('cursor', 'pointer')
-        .on('click', (event, d) => {
-            currentComponent = d.key;
-            currentView = 'component';
-            populate();
+        .data(root.descendants().slice(1))
+        .enter().append('path')
+        .attr('d', arc)
+        .style('fill', d => {
+            if (d.depth === 1) {
+                return color(d.data.name);
+            }
+            if (d.parent) {
+                const baseColor = color(d.parent.data.name);
+                // Create a scale for shades of the base color
+                const shade = d3.scaleLinear()
+                    .domain([0, d.parent.children.length])
+                    .range([d3.color(baseColor).brighter(0.5), d3.color(baseColor).darker(0.5)]);
+                return shade(d.parent.children.indexOf(d));
+            }
+            return '#ccc';
         })
-        .transition()
-        .duration(1000)
-        .attrTween('d', d => {
-            const i = d3.interpolate(0, d.value);
-            return t => {
-                d.value = i(t);
-                return arc(d);
-            };
-        });
+        .style('cursor', 'pointer')
+        .on('mouseover', (event, d) => {
+            tooltip.style('opacity', 1)
+                .html(`<strong>${d.data.name}</strong><br>Score: ${d.value.toFixed(2)}`)
+                .style('left', (event.pageX + 10) + 'px')
+                .style('top', (event.pageY - 28) + 'px');
+        })
+        .on('mouseout', () => {
+            tooltip.style('opacity', 0);
+        }).on('click', (event, d) => {
+            tooltip.style('opacity', 0);
 
-    g.selectAll('.arc-label')
-        .data(categoryData)
-        .enter().append('text')
-        .attr('class', 'arc-label')
-        .attr('transform', d => `translate(${arc.centroid(d)})`)
+
+            if (d.depth === 1) {
+                currentComponent = d.data.key;
+                currentView = 'component';
+                populate();
+            }
+        });
+    
+    g.selectAll('text')
+        .data(root.descendants().slice(1))
+        .enter()
+        .append('text')
+        .attr('transform', function(d) {
+            const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
+            const y = (d.y0 + d.y1) / 2;
+            return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
+        })
         .attr('dy', '0.35em')
         .style('text-anchor', 'middle')
-        .style('fill', '#fff')
-        .style('font-size', '12px')
-        .style('font-weight', 'bold')
-        .text(d => d.category.split(' ')[0])
-        .append('tspan')
-        .attr('x', 0)
-        .attr('dy', '1.2em')
-        .text(d => d.value.toFixed(2));
+        .style('font-size', '10px')
+        .style('fill', 'white')
+        .text(d => d.depth == 1 ? d.data.name : '');
 
     narrativeText.html(`
         SPI is not a black box. It breaks into three core pillars—Basic Human Needs, Foundations of Wellbeing, and Opportunity. Which pillar drives success in the region? Where are the gaps?
@@ -327,11 +379,10 @@ function createCountryDashboard(countryData) {
 
         <h3>${countryData.country}'s Social Progress</h3>
         <p>Overall SPI Score: <strong>${(+countryData.spi_score).toFixed(2)}</strong> (Rank: ${countryData.spi_rank})</p>
-        <p>This chart shows the three main pillars of social progress for ${countryData.country}. Click on a colored segment to drill down further into its sub-components and see what drives this country's performance.</p>
+        <p>This sunburst chart shows the three main pillars of social progress for ${countryData.country} and their sub-components. The value of each sub-component is shown as a tooltip. Click on an inner ring segment to drill down further.</p>
     `);
 }
 
-// Scene: Component Detail
 function createComponentDetail(countryData, componentKey) {
     const svg = container.append('svg').attr('viewBox', '0 0 960 600');
     const componentMap = {
@@ -339,15 +390,36 @@ function createComponentDetail(countryData, componentKey) {
         wellbeing: ['access_basic_knowledge', 'access_info_comm', 'health_wellness', 'env_quality'],
         opportunity: ['personal_rights', 'personal_freedom_choice', 'inclusiveness', 'access_adv_edu']
     };
+    const nameMap = {
+        'basic_nutri_med_care': 'Nutrition and Basic Medical Care',
+        'water_sanitation': 'Water and Sanitation',
+        'shelter': 'Shelter',
+        'personal_safety': 'Personal Safety',
+        'access_basic_knowledge': 'Access to Basic Knowledge',
+        'access_info_comm': 'Access to Information and Communications',
+        'health_wellness': 'Health and Wellness',
+        'env_quality': 'Environmental Quality',
+        'personal_rights': 'Personal Rights',
+        'personal_freedom_choice': 'Personal Freedom and Choice',
+        'inclusiveness': 'Inclusiveness',
+        'access_adv_edu': 'Access to Advanced Education'
+    };
     const subComponents = componentMap[componentKey];
-    const subComponentData = subComponents.map(key => ({ key, value: +countryData[key] }));
+    const subComponentData = subComponents.map(key => ({ name: nameMap[key], value: +countryData[key] })).sort((a, b) => b.value - a.value);
 
     const componentName = componentKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     svg.append('text').attr('x', '50%').attr('y', 40).attr('text-anchor', 'middle').style('font-size', '24px').style('font-weight', 'bold').text(`${componentName} in ${countryData.country}`);
 
-    const xScale = d3.scaleBand().domain(subComponents.map(d => d.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()))).range([100, 860]).padding(0.4);
+    const xScale = d3.scaleBand().domain(subComponentData.map(d => d.name)).range([100, 860]).padding(0.4);
     const yScale = d3.scaleLinear().domain([0, 100]).range([500, 100]);
-    const colorScale = d3.scaleOrdinal(d3.schemeObservable10);
+    const color = d3.scaleOrdinal()
+        .domain(['Basic Human Needs', 'Foundations of Wellbeing', 'Opportunity'])
+        .range(d3.schemeTableau10.slice(0,3));
+
+    const baseColor = color(componentKey.split('_')[0].charAt(0).toUpperCase() + componentKey.split('_')[0].slice(1) + (componentKey.split('_').length > 1 ? ' ' + componentKey.split('_')[1].charAt(0).toUpperCase() + componentKey.split('_')[1].slice(1) : ''));
+    const shade = d3.scaleLinear()
+        .domain([0, subComponentData.length])
+        .range([d3.color(baseColor).brighter(0.5), d3.color(baseColor).darker(0.5)]);
 
     svg.append('g').attr('transform', 'translate(0, 500)').call(d3.axisBottom(xScale).tickSize(0).tickPadding(10)).selectAll('text').style('font-size', '12px').attr('transform', 'rotate(-45)').style('text-anchor', 'end');
     svg.append('g').attr('transform', 'translate(100, 0)').call(d3.axisLeft(yScale).ticks(5).tickSize(-760).tickPadding(10));
@@ -356,11 +428,11 @@ function createComponentDetail(countryData, componentKey) {
         .data(subComponentData)
         .enter()
         .append('rect')
-        .attr('x', d => xScale(d.key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())))
+        .attr('x', d => xScale(d.name))
         .attr('y', 500)
         .attr('width', xScale.bandwidth())
         .attr('height', 0)
-        .style('fill', (d, i) => colorScale(i))
+        .style('fill', (d, i) => shade(i))
         .transition().duration(1000)
         .attr('y', d => yScale(d.value))
         .attr('height', d => 500 - yScale(d.value));
@@ -371,6 +443,7 @@ function createComponentDetail(countryData, componentKey) {
         <p>This chart breaks down the <strong>${componentName}</strong> score into its core components. This reveals the specific areas where ${countryData.country} is performing well and where there are challenges.</p>
     `);
 }
+
 
 // Initial call
 populate();
