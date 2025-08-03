@@ -4,6 +4,7 @@ let currentComponent = null;
 let currentContinent = 'all';
 
 const container = d3.select('#narrative-container');
+
 const narrativeText = d3.select('#narrative-text');
 const tooltip = d3.select('#tooltip');
 const backButton = d3.select('#back');
@@ -117,55 +118,96 @@ function createWorldMap() {
         });
     }
 
-    const top5Countries = spiData
+    const filteredSpiData = spiData
         .filter(d => currentContinent === 'all' || d.continent === currentContinent)
-        .sort((a, b) => b.spi_score - a.spi_score)
-        .slice(0, 5);
+        .sort((a, b) => b.spi_score - a.spi_score);
 
-    const barChartContainer = container.append('div')
-        .style('position', 'absolute')
-        .style('bottom', '20px')
-        .style('left', '20px')
-        .style('width', '250px')
-        .style('background-color', 'rgba(255, 255, 255, 0.9)')
-        .style('padding', '10px')
-        .style('border-radius', '5px');
+    const top3Countries = filteredSpiData.slice(0, 3);
+    const bottom3Countries = filteredSpiData.slice(-3).sort((a, b) => a.spi_score - b.spi_score);
 
-    barChartContainer.append('h4').text(`Top 5 in ${currentContinent === 'all' ? 'the World' : currentContinent}`);
+    const chartsContainer = container.append('div')
+        .attr('class', 'charts-container');
 
-    const barSvg = barChartContainer.append('svg').attr('width', '100%').attr('height', 200);
+    // Top 3 Chart
+    const topBarChartContainer = chartsContainer.append('div')
+	.attr('class', 'chart-container');
 
-    const yScale = d3.scaleBand()
-        .domain(top5Countries.map(d => d.country))
-        .range([0, 200])
+    topBarChartContainer.append('h4').text(`Top 3 in ${currentContinent === 'all' ? 'the World' : currentContinent}`);
+
+    const topBarSvg = topBarChartContainer.append('svg').attr('width', '100%').attr('height', 120);
+
+    const topYScale = d3.scaleBand()
+        .domain(top3Countries.map(d => d.country))
+        .range([0, 120])
         .padding(0.1);
 
-    const xScale = d3.scaleLinear()
+    const topXScale = d3.scaleLinear()
         .domain([0, 100])
         .range([0, 230]);
 
-    barSvg.selectAll('.bar')
-        .data(top5Countries)
+    topBarSvg.selectAll('.bar')
+        .data(top3Countries)
         .enter()
         .append('rect')
         .attr('class', 'bar')
-        .attr('y', d => yScale(d.country))
-        .attr('height', yScale.bandwidth())
+        .attr('y', d => topYScale(d.country))
+        .attr('height', topYScale.bandwidth())
         .attr('width', 0)
         .style('fill', d => colorScale(d.spi_score))
         .transition()
         .duration(1000)
-        .attr('width', d => xScale(d.spi_score));
+        .attr('width', d => topXScale(d.spi_score));
 
-    barSvg.selectAll('.bar-label')
-        .data(top5Countries)
+    topBarSvg.selectAll('.bar-label')
+        .data(top3Countries)
         .enter()
         .append('text')
         .attr('class', 'bar-label')
         .attr('x', 5)
-        .attr('y', d => yScale(d.country) + yScale.bandwidth() / 2)
+        .attr('y', d => topYScale(d.country) + topYScale.bandwidth() / 2)
         .attr('dy', '0.35em')
         .style('fill', '#fff')
+        .text(d => `${d.country} (${(+d.spi_score).toFixed(2)})`);
+
+    // Bottom 3 Chart
+    const bottomBarChartContainer = chartsContainer.append('div')
+	.attr('class', 'chart-container');
+
+    bottomBarChartContainer.append('h4').text(`Bottom 3 in ${currentContinent === 'all' ? 'the World' : currentContinent}`);
+
+    const bottomBarSvg = bottomBarChartContainer.append('svg').attr('width', '100%').attr('height', 120);
+
+    const bottomYScale = d3.scaleBand()
+        .domain(bottom3Countries.map(d => d.country))
+        .range([0, 120])
+        .padding(0.1);
+
+    const bottomXScale = d3.scaleLinear()
+        .domain([0, 100])
+        .range([0, 230]);
+
+    bottomBarSvg.selectAll('.bar')
+        .data(bottom3Countries)
+        .enter()
+        .append('rect')
+        .attr('class', 'bar')
+        .attr('y', d => bottomYScale(d.country))
+        .attr('height', bottomYScale.bandwidth())
+        .attr('width', 0)
+        .style('fill', d => colorScale(d.spi_score))
+        .transition()
+        .duration(1000)
+        .attr('width', d => bottomXScale(d.spi_score));
+
+    bottomBarSvg.selectAll('.bar-label')
+        .data(bottom3Countries)
+        .enter()
+        .append('text')
+        .attr('class', 'bar-label')
+        .attr('x', 5)
+        .attr('y', d => bottomYScale(d.country) + bottomYScale.bandwidth() / 2)
+        .attr('dy', '0.35em')
+        .style('fill', 'orange')
         .text(d => `${d.country} (${(+d.spi_score).toFixed(2)})`);
 
     svg.selectAll('.country')
