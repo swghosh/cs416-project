@@ -351,7 +351,12 @@ function createCountryDashboard(countryData) {
             tooltip.style('opacity', 0);
 
 
-            if (d.depth === 1) {
+            if (d.depth === 2) {
+                const parentComponent = d.parent.data.key;
+                currentComponent = parentComponent;
+                currentView = 'component';
+                populate();
+            } else if (d.depth === 1) {
                 currentComponent = d.data.key;
                 currentView = 'component';
                 populate();
