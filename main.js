@@ -82,7 +82,12 @@ function createIntroScene() {
         <h2>What is Social Progress?</h2>
 
         <p id="desc">
-            The Social Progress Index (SPI) offers a comprehensive framework for measuring a country's social performance, independent of economic indicators. It assesses how well a society provides for the needs of its citizens, creates foundations for wellbeing, and expands opportunity. This interactive story allows you to explore the 2023 SPI data, from a global overview down to the specific factors that shape the lives of people around the world.
+            Societal progress is a normative concept and can be defined as the change or advancement of major conditions of societies and people's lives in a direction considered to be desirable based on prevailing values and goals of development.
+            <b>Social Progress Index (SPI)</b> gives us a holistic view of how countries are doing beyond GDP, measuring how well they meet the basic human needs of their citizens, the building blocks of wellbeing, and the foundations of opportunity.
+            
+            <br><br>
+
+            This interactive story allows you to explore the 2022 SPI data, from a global overview down to the specific continents into factors that shape the lives of people around the world.
         </p>
         
         <button class="intro-button">Let's Begin Exploring</button>
@@ -242,7 +247,14 @@ function createWorldMap() {
             }
         });
 
-    narrativeText.html('The map shows overall Social Progress Index score for each country. Darker shades indicate higher social progress. Click on a country or select a continent to drill down and explore its detailed social progress.');
+    narrativeText.html(`
+        The map shows overall Social Progress Index score for each country. Darker shades indicate higher social progress.
+        
+        <hr>
+        
+        Let\'s dive into a region of contrasts and explore emerging stories about social progress. Which countries are leading in social progress, and which are being left behind?
+    `);
+
 }
 
 // Scene: Country Dashboard
@@ -310,6 +322,9 @@ function createCountryDashboard(countryData) {
         .text(d => d.value.toFixed(2));
 
     narrativeText.html(`
+        SPI is not a black box. It breaks into three core pillars—Basic Human Needs, Foundations of Wellbeing, and Opportunity. Which pillar drives success in the region? Where are the gaps?
+        <hr>
+
         <h3>${countryData.country}'s Social Progress</h3>
         <p>Overall SPI Score: <strong>${(+countryData.spi_score).toFixed(2)}</strong> (Rank: ${countryData.spi_rank})</p>
         <p>This chart shows the three main pillars of social progress for ${countryData.country}. Click on a colored segment to drill down further into its sub-components and see what drives this country's performance.</p>
