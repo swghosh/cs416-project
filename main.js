@@ -279,12 +279,12 @@ function createCountryDashboard(countryData) {
         name: "root",
         children: [
             {
-                name: 'Basic Human Needs',
+                name: 'Needs',
                 key: 'basic_human_needs',
                 children: componentMap.basic_human_needs.map(key => ({ name: nameMap[key], value: +countryData[key], key: key }))
             },
             {
-                name: 'Foundations of Wellbeing',
+                name: 'Wellbeing',
                 key: 'wellbeing',
                 children: componentMap.wellbeing.map(key => ({ name: nameMap[key], value: +countryData[key], key: key }))
             },
@@ -297,7 +297,18 @@ function createCountryDashboard(countryData) {
     };
 
     const svg = container.append('svg').attr('viewBox', '0 0 960 600');
-    svg.append('text').attr('x', '50%').attr('y', 40).attr('text-anchor', 'middle').style('font-size', '28px').style('font-weight', 'bold').text(countryData.country);
+    svg.append('text')
+        .attr('x', '50%')
+        .attr('y', 0) // Start from top
+        .attr('text-anchor', 'middle')
+        .style('font-size', '28px')
+        .style('font-weight', 'bold')
+        .style('opacity', 0)
+        .text(countryData.country)
+        .transition()
+        .duration(1000)
+        .attr('y', 40)
+        .style('opacity', 1);
 
     const width = 960, height = 600, radius = Math.min(width, height) / 2.5;
     const g = svg.append('g').attr('transform', `translate(${width / 2},${height / 2 + 20})`);
@@ -361,6 +372,12 @@ function createCountryDashboard(countryData) {
                 currentView = 'component';
                 populate();
             }
+        })
+        .transition()
+        .duration(750)
+        .attrTween('d', d => {
+            const i = d3.interpolate({ x0: d.x0, x1: d.x0 }, d);
+            return t => arc(i(t));
         });
     
     g.selectAll('text')
@@ -374,9 +391,16 @@ function createCountryDashboard(countryData) {
         })
         .attr('dy', '0.35em')
         .style('text-anchor', 'middle')
-        .style('font-size', '10px')
+        .style('font-size', '15px')
+        .style('font-weight', 'bold')
+        .style('text-shadow', '0 0 2px #000')
+        .style('opacity', 0)
         .style('fill', 'white')
-        .text(d => d.depth == 1 ? d.data.name : '');
+        .text(d => d.depth === 1 ? d.data.name : '')
+        .transition()
+        .duration(1000)
+        .delay(500)
+        .style('opacity', 1);
 
     narrativeText.html(`
         SPI is not a black box. It breaks into three core pillars—Basic Human Needs, Foundations of Wellbeing, and Opportunity. Which pillar drives success in the region? Where are the gaps?
